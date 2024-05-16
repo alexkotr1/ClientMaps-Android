@@ -1,41 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="10dp"
-    xmlns:tools="http://schemas.android.com/tools">
+    android:padding="16dp"
+    android:background="?attr/selectableItemBackground">
 
     <TextView
+        android:id="@+id/name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/name"
         android:textColor="@color/black"
         android:textSize="20sp"
+        android:textStyle="bold"
+        android:paddingBottom="4dp"
         tools:text="Name"/>
+
     <TextView
+        android:id="@+id/place"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/place"
-        android:layout_below="@+id/name"
+        android:layout_below="@id/name"
         android:textColor="@color/black"
         android:textSize="18sp"
-        android:layout_marginTop="5dp"
-        tools:text="Phone"/>
+        android:paddingBottom="4dp"
+        tools:text="Place"/>
+
     <TextView
+        android:id="@+id/phone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/phone"
-        android:layout_below="@+id/place"
+        android:layout_below="@id/place"
         android:textColor="@color/black"
         android:textSize="15sp"
-        android:layout_marginTop="5dp"
+        android:paddingBottom="8dp"
         tools:text="Phone"/>
 
-    <LinearLayout
+    <View
         android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:layout_below="@+id/phone"
+        android:layout_height="1dp"
+        android:layout_below="@id/phone"
         android:background="#DAD8D8"
-        android:layout_marginTop="5dp"
-        />
+        android:layout_marginTop="8dp"/>
 </RelativeLayout>
