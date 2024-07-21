@@ -20,10 +20,20 @@
             android:queryHint="Search"
             android:visibility="visible"
             />
+        <TextView
+            android:id="@+id/clientCount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/searchView"
+            android:padding="10dp"
+            android:text=""
+            android:textColor="@android:color/black"
+            android:textSize="17sp"
+            android:background="?attr/selectableItemBackground" />
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerview"
             android:layout_width="match_parent"
-            android:layout_below="@+id/searchView"
+            android:layout_below="@+id/clientCount"
             android:layout_height="wrap_content" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton

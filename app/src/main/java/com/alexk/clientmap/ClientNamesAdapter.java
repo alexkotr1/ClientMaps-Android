@@ -106,7 +106,7 @@ public class ClientNamesAdapter extends RecyclerView.Adapter<ClientNamesAdapter.
     public void removeItem(int position, String id, JSONObject requestBody) {
         Helper.Request(Helper.EDIT_ENDPOINT,id,requestBody,context,new Helper.OnRequestSuccessListener(){
             @Override
-            public void onSuccess(int statusCode) {
+            public void onSuccess(int statusCode, String response) {
                 mClientNames.remove(position);
                 notifyItemRemoved(position);
                 notifyDataSetChanged();
@@ -115,7 +115,6 @@ public class ClientNamesAdapter extends RecyclerView.Adapter<ClientNamesAdapter.
 
             @Override
             public void onError(int statusCode) {
-                Log.d("STATUS",Integer.toString(statusCode));
                 if (statusCode == 200){
                     mClientNames.remove(position);
                     notifyItemRemoved(position);

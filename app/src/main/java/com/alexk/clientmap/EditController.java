@@ -1,32 +1,47 @@
 package com.alexk.clientmap;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Switch;
+import android.widget.ImageView;
+
+import com.android.volley.VolleyError;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
 public class EditController extends AppCompatActivity implements LocationUtilitiesListener {
-    LocationUtilities locationUtilities;
-    Client client;
-    ProgressBar progressBar;
+    private LocationUtilities locationUtilities;
+    private Client client;
+    private ProgressBar progressBar;
     private boolean isActivityPaused = true;
+    private ImageView imageView;
+    private ActivityResultLauncher<Intent> pickImageLauncher;
+    private ActivityResultLauncher<Intent> captureImageLauncher;
+    private boolean cameraLaunched = false;
+
     @Override
     protected void onResume(){
         super.onResume();
-        if (isActivityPaused) {
+        if (isActivityPaused && !cameraLaunched) {
             Intent intent = new Intent(this, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
@@ -36,7 +51,6 @@ public class EditController extends AppCompatActivity implements LocationUtiliti
     @Override
     protected void onPause() {
         super.onPause();
-
         isActivityPaused = true;
     }
     @Override
@@ -46,10 +60,17 @@ public class EditController extends AppCompatActivity implements LocationUtiliti
         super.onCreate(savedInstanceState);
         setTitle("Επεξεργασία Πελάτη");
         setContentView(R.layout.activity_edit_controller);
+
+        imageView = findViewById(R.id.imageView);
+
         EditText clientName = findViewById(R.id.clientName);
         EditText phone = findViewById(R.id.phone);
         EditText comments = findViewById(R.id.comments);
         EditText addClient = findViewById(R.id.addClient);
+
+        Button addImage = findViewById(R.id.select_image_button);
+        Button captureImageButton = findViewById(R.id.capture_image_button);
+
         locationUtilities = new LocationUtilities(this, this);
         locationUtilities.setListener(this);
         progressBar = findViewById(R.id.progress_bar);
@@ -66,6 +87,7 @@ public class EditController extends AppCompatActivity implements LocationUtiliti
         client.setLongitude(getIntent().getStringExtra("longitude"));
         client.setId(getIntent().getStringExtra("id"));
         client.setNames(getIntent().getStringArrayExtra("names"));
+        client.setHas_image(getIntent().getBooleanExtra("has_image", false));
 
         ArrayList<String> NameList = null;
         if (client.getNames().length != 0) {
@@ -82,6 +104,47 @@ public class EditController extends AppCompatActivity implements LocationUtiliti
         }
         if (client.getComments() != null){
             comments.setText(client.getComments());
+        }
+        pickImageLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        Uri imageUri = result.getData().getData();
+                        imageView.setImageURI(imageUri);
+                        Helper.AdjustImageView(imageView, 820 , 600);
+                    }
+                });
+        captureImageLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        Bitmap imageBitmap = (Bitmap) result.getData().getExtras().get("data");
+                        imageView.setImageBitmap(imageBitmap);
+                        Helper.AdjustImageView(imageView, 820 , 600);
+                    }
+                });
+        addImage.setOnClickListener(v -> {
+            openFileChooser();
+            cameraLaunched = true;
+        });
+        captureImageButton.setOnClickListener(v -> {
+            openCamera();
+            cameraLaunched = true;
+        });
+        if (client.has_image()){
+            ImageDownloader.downloadImage(this, Helper.DOWNLOAD_ENDPOINT + Helper.PASSWORD + '/' + client.getId(),  new ImageDownloader.OnImageDownloadListener() {
+                @Override
+                public void onImageDownloaded(Bitmap bitmap) {
+                    imageView.setImageBitmap(bitmap);
+                    Helper.AdjustImageView(imageView, 820 , 600);
+                }
+
+                @Override
+                public void onError(VolleyError error) {
+                    // Handle the error
+                    Log.e("MainActivity", "Image download failed: " + error.getMessage());
+                }
+            });
         }
 
         edit.setOnClickListener(new View.OnClickListener() {
@@ -115,9 +178,21 @@ public class EditController extends AppCompatActivity implements LocationUtiliti
                 } else {
                     Helper.Request(Helper.EDIT_ENDPOINT, client.getId(), Helper.ClientToRequestBody(client), EditController.this, new Helper.OnRequestSuccessListener() {
                         @Override
-                        public void onSuccess(int statusCode) {
+                        public void onSuccess(int statusCode, String res) {
                             progressBar.setVisibility(View.GONE);
                             Helper.Toast("Επιτυχής Επεξεργασία!", EditController.this, MainActivity.class);
+                            if (imageView.getDrawable() == null) return;
+                            Helper.uploadImage(getApplicationContext(), ((BitmapDrawable) imageView.getDrawable()).getBitmap(), Helper.UPLOAD_ENDPOINT + Helper.PASSWORD + "/" + client.getId(), new Helper.OnRequestSuccessListener() {
+                                @Override
+                                public void onSuccess(int statusCode, String res) {
+                                    Log.d("SUCCESS", Integer.toString(statusCode));
+                                }
+
+                                @Override
+                                public void onError(int statusCode) {
+                                    Log.d("ERROR",Integer.toString(statusCode));
+                                }
+                            });
                         }
 
                         @Override
@@ -157,7 +232,7 @@ public class EditController extends AppCompatActivity implements LocationUtiliti
         client.setLatitude(Double.toString(location.getLatitude()));
         Helper.Request(Helper.EDIT_ENDPOINT, client.getId(), Helper.ClientToRequestBody(client), EditController.this, new Helper.OnRequestSuccessListener() {
             @Override
-            public void onSuccess(int statusCode) {
+            public void onSuccess(int statusCode, String response) {
                 progressBar.setVisibility(View.GONE);
                 Helper.Toast("Επιτυχής Επεξεργασία!", EditController.this, MainActivity.class);
             }
@@ -183,5 +258,15 @@ public class EditController extends AppCompatActivity implements LocationUtiliti
             }
         });
 
+    }
+
+    private void openFileChooser() {
+        Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        intent.setType("image/*");
+        pickImageLauncher.launch(intent);
+    }
+    private void openCamera() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        captureImageLauncher.launch(intent);
     }
 }

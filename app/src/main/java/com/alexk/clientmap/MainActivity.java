@@ -21,6 +21,9 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Filter;
+import android.widget.ImageView;
+import android.widget.TextView;
+
 import androidx.appcompat.widget.SearchView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
@@ -48,19 +51,23 @@ public class MainActivity extends AppCompatActivity {
     private MyAdapter adapter = null;
     private SwipeRefreshLayout swipeRefreshLayout = null;
     private Boolean isActivityPaused = true;
+    private TextView clientCount;
+
     @Override
-    protected void onResume(){
+    protected void onResume() {
         super.onResume();
         if (isActivityPaused) {
             load();
         }
         isActivityPaused = false;
     }
+
     @Override
-    protected void onPause(){
+    protected void onPause() {
         super.onPause();
         isActivityPaused = true;
     }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Intent intent = new Intent(this, NetworkService.class);
@@ -71,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
         isActivityPaused = false;
         setContentView(R.layout.activity_main);
         recyclerView = findViewById(R.id.recyclerview);
+        clientCount = findViewById(R.id.clientCount);
         requestQueue = Volley.newRequestQueue(getApplicationContext());
         load();
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
@@ -85,9 +93,45 @@ public class MainActivity extends AppCompatActivity {
         SearchView searchView = findViewById(R.id.searchView);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
         searchView.setQueryHint("Αναζήτηση");
+        searchView.setIconified(false);
+        searchView.clearFocus();
+
+        ImageView searchCloseButton = searchView.findViewById(androidx.appcompat.R.id.search_close_btn);
+        if (searchCloseButton != null) {
+            searchCloseButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    searchView.setQuery("", false);
+                    hideKeyboard();
+                    searchView.clearFocus();
+                    Log.d("SearchView", "Clear button clicked");
+                }
+            });
+        }
+
+        searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View view, boolean hasFocus) {
+                if (!hasFocus) {
+                    hideKeyboard();
+                }
+            }
+        });
+
+        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                searchView.setQuery("", false);
+                searchView.clearFocus();
+                hideKeyboard();
+                return true;
+            }
+        });
+
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
+                hideKeyboard();
                 return false;
             }
 
@@ -99,6 +143,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
+
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -107,19 +152,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        fab.setOnLongClickListener(
-                new View.OnLongClickListener(){
-                    @Override
-                    public boolean onLongClick(View view){
-                        Intent intent = new Intent(MainActivity.this, SettingsController.class);
-                        startActivity(intent);
-                        return true;
-                    }
-                }
-        );
+        fab.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                Intent intent = new Intent(MainActivity.this, SettingsController.class);
+                startActivity(intent);
+                return true;
+            }
+        });
     }
-    private void load(){
-        if (!Helper.hasInternetAccess(MainActivity.this)){
+
+    private void load() {
+        if (!Helper.hasInternetAccess(MainActivity.this)) {
             setOffline();
             return;
         }
@@ -138,6 +182,7 @@ public class MainActivity extends AppCompatActivity {
                         return c1.getName().compareToIgnoreCase(c2.getName());
                     }
                 });
+                clientCount.setText(String.format("Συνολικοί Πελάτες: %s", String.valueOf(clients.size())));
                 adapter = new MyAdapter(getApplicationContext(), clients);
                 recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
                 recyclerView.setAdapter(adapter);
@@ -151,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
             public void onErrorResponse(VolleyError error) {
                 swipeRefreshLayout.setRefreshing(false);
                 error.printStackTrace();
-                if (error instanceof TimeoutError){
+                if (error instanceof TimeoutError) {
                     setOffline();
                 }
             }
@@ -162,7 +207,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void setOffline(){
+    public void setOffline() {
         List<Client> clients = Helper.retrieveCache(MainActivity.this);
         if (clients == null) return;
         Collections.sort(clients, new Comparator<Client>() {
@@ -171,6 +216,7 @@ public class MainActivity extends AppCompatActivity {
                 return c1.getName().compareToIgnoreCase(c2.getName());
             }
         });
+        clientCount.setText(String.format("Συνολικοί Πελάτες: %s", String.valueOf(clients.size())));
         adapter = new MyAdapter(getApplicationContext(), clients);
         recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
         recyclerView.setAdapter(adapter);
@@ -178,5 +224,13 @@ public class MainActivity extends AppCompatActivity {
             swipeRefreshLayout.setRefreshing(false);
         }
         setTitle("Οδηγός Πελατών (Εκτός Σύνδεσης)");
+    }
+
+    private void hideKeyboard() {
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
     }
 }

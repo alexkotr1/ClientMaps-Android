@@ -3,6 +3,8 @@ package com.alexk.clientmap;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -13,6 +15,8 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.android.volley.VolleyError;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,11 +98,33 @@ public class MyAdapter extends RecyclerView.Adapter<MyViewHolder> {
             @Override
             public boolean onLongClick(View v) {
                 PopupMenu popupMenu = new PopupMenu(context, v);
-                popupMenu.getMenuInflater().inflate(R.menu.popup_menu, popupMenu.getMenu());
+                if (client.has_image()){
+                    popupMenu.getMenuInflater().inflate(R.menu.popup_menu_w_view, popupMenu.getMenu());
+                }
+                else {
+                    popupMenu.getMenuInflater().inflate(R.menu.popup_menu, popupMenu.getMenu());
+                }
                 popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                     @Override
                     public boolean onMenuItemClick(android.view.MenuItem item) {
                         switch (item.getItemId()) {
+                            case R.id.view:
+                                ImageDownloader.downloadImage(context, Helper.DOWNLOAD_ENDPOINT + Helper.PASSWORD + '/' + client.getId(),  new ImageDownloader.OnImageDownloadListener() {
+                                    @Override
+                                    public void onImageDownloaded(Bitmap bitmap) {
+                                        Intent intent = new Intent(context, FullScreenImageActivity.class);
+                                        intent.putExtra("image", bitmap);
+                                        context.startActivity(intent);
+                                    }
+
+                                    @Override
+                                    public void onError(VolleyError error) {
+                                        // Handle the error
+                                        Log.e("MainActivity", "Image download failed: " + error.getMessage());
+                                    }
+                                });
+
+                                return true;
                             case R.id.edit:
                                 Intent intent = new Intent(context, EditController.class);
                                 intent.putExtra("name", client.getName());
@@ -108,6 +134,8 @@ public class MyAdapter extends RecyclerView.Adapter<MyViewHolder> {
                                 intent.putExtra("longitude", client.getLongitude());
                                 intent.putExtra("id",client.getId());
                                 intent.putExtra("names",client.getNames());
+                                intent.putExtra("place",client.getPlace());
+                                intent.putExtra("has_image",client.has_image());
                                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                 context.startActivity(intent);
                                 return true;
@@ -136,7 +164,7 @@ public class MyAdapter extends RecyclerView.Adapter<MyViewHolder> {
     public void removeItem(int position, String id) {
         Helper.Request(Helper.DELETE_ENDPOINT,id,null,context,new Helper.OnRequestSuccessListener(){
             @Override
-            public void onSuccess(int statusCode) {
+            public void onSuccess(int statusCode, String response) {
                 clients.remove(position);
                 filteredClients.remove(position);
                 notifyItemRemoved(position);
@@ -145,7 +173,6 @@ public class MyAdapter extends RecyclerView.Adapter<MyViewHolder> {
 
             @Override
             public void onError(int statusCode) {
-                Log.d("STATUS",Integer.toString(statusCode));
                 if (statusCode == 200){
                     clients.remove(position);
                     filteredClients.remove(position);

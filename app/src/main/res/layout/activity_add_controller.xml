@@ -20,17 +20,6 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <EditText
-        android:id="@+id/comments"
-        android:layout_width="210dp"
-        android:layout_height="48dp"
-        android:hint="Σχόλια"
-        android:imeOptions="actionDone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/phone" />
-
-    <EditText
         android:id="@+id/phone"
         android:layout_width="210dp"
         android:layout_height="48dp"
@@ -41,6 +30,18 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/clientName" />
+
+    <EditText
+        android:id="@+id/comments"
+        android:layout_width="210dp"
+        android:layout_height="48dp"
+        android:hint="Σχόλια"
+        android:imeOptions="actionDone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/phone" />
+
     <ProgressBar
         android:id="@+id/progress_bar"
         android:layout_width="210dp"
@@ -51,6 +52,38 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/comments"/>
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:contentDescription="Selected Image"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/progress_bar" />
+
+    <Button
+        android:id="@+id/select_image_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Επιλογή Εικόνας"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/imageView" />
+
+    <Button
+        android:id="@+id/capture_image_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Λήψη Φωτογραφίας"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/select_image_button" />
+
     <Button
         android:id="@+id/add_button"
         android:layout_width="wrap_content"
@@ -59,6 +92,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/progress_bar" />
+        app:layout_constraintTop_toBottomOf="@+id/capture_image_button" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

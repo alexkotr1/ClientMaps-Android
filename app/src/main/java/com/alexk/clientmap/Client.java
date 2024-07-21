@@ -1,6 +1,7 @@
 package com.alexk.clientmap;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -24,6 +25,7 @@ public class Client implements Serializable {
     String id;
     String[] names;
     String place;
+    Boolean has_image;
 
 
     public String getName() {
@@ -83,6 +85,8 @@ public class Client implements Serializable {
     }
 
     public String getPlace() { return this.place; }
+    public Boolean has_image() { return this.has_image; }
+    public void setHas_image(Boolean has_image) { this.has_image = has_image; }
     public void saveClientLocally(Context context) {
         try {
             List<Client> clients = getAllClients(context);

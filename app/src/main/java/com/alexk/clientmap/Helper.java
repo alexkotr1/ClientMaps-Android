@@ -8,31 +8,46 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
+import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Hashtable;
+
+
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.SharedPreferences;
@@ -44,6 +59,8 @@ public class Helper extends AppCompatActivity {
     public static String DATA_ENDPOINT = HOST + "data/";
     public static String PASSWORD = "";
     public static String USER = "";
+    public static String UPLOAD_ENDPOINT = HOST + "upload/";
+    public static String DOWNLOAD_ENDPOINT = HOST + "download/";
     public static void loadCredentials(Context context){
         Preferences prefs = new Preferences(context);
         HOST = !prefs.getHost().isEmpty() ? prefs.getHost() : HOST;
@@ -53,6 +70,8 @@ public class Helper extends AppCompatActivity {
         EDIT_ENDPOINT = HOST + "edit/";
         DELETE_ENDPOINT = HOST + "delete/";
         DATA_ENDPOINT = HOST + "data/";
+        UPLOAD_ENDPOINT = HOST + "upload/";
+        DOWNLOAD_ENDPOINT = HOST + "download/";
     }
 
     public static void Alert(String title, String message, Context context, Class<?> redirectClass) {
@@ -113,7 +132,7 @@ public class Helper extends AppCompatActivity {
         for(Client client : clients){
             Request(ADD_ENDPOINT, null, ClientToRequestBody(client), context, new OnRequestSuccessListener() {
                 @Override
-                public void onSuccess(int statusCode) {
+                public void onSuccess(int statusCode, String response) {
                     client.deleteLocalClient(context);
                 }
 
@@ -160,7 +179,41 @@ public class Helper extends AppCompatActivity {
             imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
     }
+    private static String getStringImage(Bitmap bmp){
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bmp.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+        byte[] imageBytes = baos.toByteArray();
+        String encodedImage = Base64.encodeToString(imageBytes, Base64.DEFAULT);
+        return encodedImage;
+    }
+    public static void uploadImage(Context context, Bitmap bitmap, String UPLOAD_URL, OnRequestSuccessListener listener) {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+        byte[] imageData = byteArrayOutputStream.toByteArray();
 
+        VolleyMultipartRequest multipartRequest = new VolleyMultipartRequest(Request.Method.POST, UPLOAD_URL ,
+                new Response.Listener<NetworkResponse>() {
+                    @Override
+                    public void onResponse(NetworkResponse response) {
+                        listener.onSuccess(200, null);
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        if (error.networkResponse != null) {
+                            listener.onError(error.networkResponse.statusCode);
+                        } else {
+                            listener.onError(-1);
+                        }
+                    }
+                });
+
+        multipartRequest.addByteData("image", new VolleyMultipartRequest.DataPart("image.jpg", imageData, "image/jpeg"));
+
+        RequestQueue requestQueue = Volley.newRequestQueue(context);
+        requestQueue.add(multipartRequest);
+    }
 
     public static void Request(String url, String id,JSONObject requestBody, Context context, OnRequestSuccessListener listener) {
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, url + (id == null || id.isEmpty() ? "": (id + "/"))  + PASSWORD , requestBody,
@@ -168,7 +221,12 @@ public class Helper extends AppCompatActivity {
                     @Override
                     public void onResponse(JSONObject response) {
                         if (listener != null) {
-                            listener.onSuccess(200);
+                            try {
+                                Log.d("RESPONSE",response.getString("clientId"));
+                                listener.onSuccess(200, response.getString("clientId"));
+                            } catch (JSONException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     }
                 },
@@ -187,7 +245,7 @@ public class Helper extends AppCompatActivity {
                             switch (statusCode) {
                                 case 200:
                                 case -1:
-                                    listener.onSuccess(200);
+                                    listener.onSuccess(200, "error");
                                     break;
                                 case 409:
                                     listener.onError(409);
@@ -201,9 +259,15 @@ public class Helper extends AppCompatActivity {
                 });
         Volley.newRequestQueue(context).add(request);
     }
+
     public interface OnRequestSuccessListener {
-        void onSuccess(int statusCode);
+        void onSuccess(int statusCode, String clientId);
         void onError(int statusCode);
     }
-
+    public static void AdjustImageView(ImageView imageView, int width, int height){
+        ViewGroup.LayoutParams params = imageView.getLayoutParams();
+        params.width = width;
+        params.height = height;
+        imageView.setLayoutParams(params);
+    }
 }

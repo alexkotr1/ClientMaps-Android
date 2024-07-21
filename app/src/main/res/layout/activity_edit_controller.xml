@@ -45,6 +45,37 @@
         app:layout_constraintTop_toBottomOf="@+id/comments"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:contentDescription="Selected Image"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/addClient" />
+
+    <Button
+        android:id="@+id/select_image_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Επιλογή Εικόνας"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/imageView" />
+
+    <Button
+        android:id="@+id/capture_image_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Λήψη Φωτογραφίας"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/select_image_button" />
+
     <Switch
         android:id="@+id/locationSwitch"
         android:text="Χρήση τρέχουσας τοποθεσίας"
@@ -53,10 +84,11 @@
         android:checked="false"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@+id/addClient"
+        app:layout_constraintTop_toBottomOf="@+id/capture_image_button"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         tools:ignore="UseSwitchCompatOrMaterialXml" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/namesRecyclerView"
         android:layout_width="wrap_content"
