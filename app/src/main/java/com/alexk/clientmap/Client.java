@@ -86,6 +86,7 @@ public class Client implements Serializable {
 
     public String getPlace() { return this.place; }
     public Boolean has_image() { return this.has_image; }
+    public void setPlace(String place) { this.place = place; }
     public void setHas_image(Boolean has_image) { this.has_image = has_image; }
     public void saveClientLocally(Context context) {
         try {
@@ -141,4 +142,5 @@ public class Client implements Serializable {
             e.printStackTrace();
         }
     }
+
 }

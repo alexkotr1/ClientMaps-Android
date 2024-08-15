@@ -8,8 +8,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.location.Location;
@@ -18,13 +18,21 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 
-public class AddController extends AppCompatActivity implements LocationUtilitiesListener {
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.LatLng;
+
+
+public class AddController extends AppCompatActivity implements LocationUtilitiesListener, OnMapReadyCallback {
 
     private LocationUtilities locationUtilities;
     private Client client;
@@ -32,14 +40,22 @@ public class AddController extends AppCompatActivity implements LocationUtilitie
     private ImageView imageView;
     private ActivityResultLauncher<Intent> pickImageLauncher;
     private ActivityResultLauncher<Intent> captureImageLauncher;
+    private GoogleMap mMap;
+    private Marker mMarker;
+
     Context context;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setTitle("Προσθήκη Πελάτη");
         setContentView(R.layout.activity_add_controller);
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+
         context = getApplicationContext();
         client = new Client();
         imageView = findViewById(R.id.imageView);
@@ -91,10 +107,56 @@ public class AddController extends AppCompatActivity implements LocationUtilitie
                     client.setName(name_text);
                     client.setPhone(phone_text);
                     client.setComments(comments_text);
+                    client.setLatitude(String.valueOf(mMarker.getPosition().latitude));
+                    client.setLongitude(String.valueOf(mMarker.getPosition().longitude));
                     String[] emptyNames = {};
                     client.setNames(emptyNames);
                     progressBar.setVisibility(View.VISIBLE);
-                    locationUtilities.requestLocation();
+                    if (!Helper.hasInternetAccess(AddController.this)){
+                        client.saveClientLocally(AddController.this);
+                        Helper.Toast("Ο πελάτης θα προστεθεί όταν υπάρχει σύνδεση στο διαδίκτυο",AddController.this,MainActivity.class);
+                        return;
+                    }
+                    Helper.Request(Helper.ADD_ENDPOINT, null, Helper.ClientToRequestBody(client), AddController.this, new Helper.OnRequestSuccessListener() {
+                        @Override
+                        public void onSuccess(int statusCode, String clientId) {
+                            progressBar.setVisibility(View.GONE);
+                            Helper.Toast("Επιτυχής προσθήκη!",AddController.this,MainActivity.class);
+                            if (imageView.getDrawable() == null) return;
+                            Helper.uploadImage(context, ((BitmapDrawable) imageView.getDrawable()).getBitmap(), Helper.UPLOAD_ENDPOINT + Helper.PASSWORD + "/" + clientId, new Helper.OnRequestSuccessListener() {
+                                @Override
+                                public void onSuccess(int statusCode, String res) {
+                                    Log.d("SUCCESS", Integer.toString(statusCode));
+                                }
+
+                                @Override
+                                public void onError(int statusCode) {
+                                    Log.d("ERROR",Integer.toString(statusCode));
+                                }
+                            });
+
+                        }
+
+                        @Override
+                        public void onError(int statusCode) {
+                            progressBar.setVisibility(View.GONE);
+                            Log.d("status",Integer.toString(statusCode));
+                            switch (statusCode){
+                                case 200:Helper.Toast("Επιτυχής προσθήκη!",AddController.this,MainActivity.class);
+                                    break;
+                                case 409:Helper.Alert("Προσοχή","Αυτός ο πελάτης υπάρχει ήδη!",AddController.this,null);
+                                    break;
+                                case 400:
+                                    Helper.Toast("Ο πελάτης θα προστεθεί όταν υπάρχει σύνδεση στο διαδίκτυο",AddController.this,MainActivity.class);
+                                    client.saveClientLocally(AddController.this);
+                                    break;
+                                default:
+                                    Helper.Alert("Προσοχή","Κάτι πήγε στραβά",AddController.this,MainActivity.class);
+                                    break;
+                            }
+
+                        }
+                    });
                 }
             }
         });
@@ -102,57 +164,12 @@ public class AddController extends AppCompatActivity implements LocationUtilitie
 
     @Override
     public void onLocationReceived(Location location) {
-        client.setLatitude(Double.toString(location.getLatitude()));
-        client.setLongitude(Double.toString(location.getLongitude()));
-        if (!Helper.hasInternetAccess(AddController.this)){
-            client.saveClientLocally(AddController.this);
-            Helper.Toast("Ο πελάτης θα προστεθεί όταν υπάρχει σύνδεση στο διαδίκτυο",AddController.this,MainActivity.class);
-            return;
-        }
-        //String url, JSONObject jsonObject, Context context, OnRequestSuccessListener listener
-        Helper.Request(Helper.ADD_ENDPOINT, null, Helper.ClientToRequestBody(client), AddController.this, new Helper.OnRequestSuccessListener() {
-            @Override
-            public void onSuccess(int statusCode, String clientId) {
-                progressBar.setVisibility(View.GONE);
-                Helper.Toast("Επιτυχής προσθήκη!",AddController.this,MainActivity.class);
-                if (imageView.getDrawable() == null) return;
-                Helper.uploadImage(context, ((BitmapDrawable) imageView.getDrawable()).getBitmap(), Helper.UPLOAD_ENDPOINT + Helper.PASSWORD + "/" + clientId, new Helper.OnRequestSuccessListener() {
-                    @Override
-                    public void onSuccess(int statusCode, String res) {
-                        Log.d("SUCCESS", Integer.toString(statusCode));
-                    }
-
-                    @Override
-                    public void onError(int statusCode) {
-                        Log.d("ERROR",Integer.toString(statusCode));
-                    }
-                });
-
-            }
-
-            @Override
-            public void onError(int statusCode) {
-                progressBar.setVisibility(View.GONE);
-                Log.d("status",Integer.toString(statusCode));
-                switch (statusCode){
-                    case 200:Helper.Toast("Επιτυχής προσθήκη!",AddController.this,MainActivity.class);
-                        break;
-                    case 409:Helper.Alert("Προσοχή","Αυτός ο πελάτης υπάρχει ήδη!",AddController.this,null);
-                        break;
-                    case 400:
-                        Helper.Toast("Ο πελάτης θα προστεθεί όταν υπάρχει σύνδεση στο διαδίκτυο",AddController.this,MainActivity.class);
-                        client.saveClientLocally(AddController.this);
-                        break;
-                    default:
-                        Helper.Alert("Προσοχή","Κάτι πήγε στραβά",AddController.this,MainActivity.class);
-                        break;
-                }
-
-            }
-        });
-
-
+        LatLng latlng = new LatLng(location.getLatitude(), location.getLongitude());
+        mMarker.setPosition(latlng);;
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latlng, 20));
     }
+
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -174,5 +191,37 @@ public class AddController extends AppCompatActivity implements LocationUtilitie
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         captureImageLauncher.launch(intent);
     }
+
+
+    @Override
+    public void onMapReady(@NonNull GoogleMap googleMap) {
+        mMap = googleMap;
+        LatLng initialPosition = new LatLng(0, 0);
+        mMarker = mMap.addMarker(new MarkerOptions()
+                .position(initialPosition)
+                .draggable(true));
+
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(initialPosition, 15));
+        locationUtilities.requestLocation();
+
+        mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
+            @Override
+            public void onMarkerDrag(@NonNull Marker marker) {
+
+            }
+
+            @Override
+            public void onMarkerDragStart(@NonNull Marker marker) {
+            }
+
+            @Override
+            public void onMarkerDragEnd(@NonNull Marker marker) {
+                LatLng newPosition = marker.getPosition();
+                marker.setTitle("New position: " + newPosition.latitude + ", " + newPosition.longitude);
+                marker.showInfoWindow();
+            }
+        });
+    }
+
 
 }

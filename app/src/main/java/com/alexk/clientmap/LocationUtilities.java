@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -20,6 +22,10 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class LocationUtilities {
 
@@ -89,18 +95,29 @@ public class LocationUtilities {
     private void getCurrentLocation() {
         if (checkLocationPermission()) {
             LocationRequest locationRequest = LocationRequest.create();
+            locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+            locationRequest.setInterval(5000); // 5 seconds
+            locationRequest.setFastestInterval(2000); // 2 seconds
+
             locationCallback = new LocationCallback() {
                 @Override
                 public void onLocationResult(@NonNull LocationResult locationResult) {
                     super.onLocationResult(locationResult);
                     Location location = locationResult.getLastLocation();
-                    onLocationReceived(location);
+                    if (location != null) {
+                        long locationTime = location.getTime();
+                        long elapsedTimeNanos = location.getElapsedRealtimeNanos();
+                        long elapsedTimeMillis = (SystemClock.elapsedRealtimeNanos() - elapsedTimeNanos) / 1000000;
+                        if (elapsedTimeMillis < 10000) {
+                            onLocationReceived(location, locationTime);
+                        }
+                    }
                     fusedLocationClient.removeLocationUpdates(locationCallback);
                 }
             };
 
             try {
-                fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);
+                fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
             } catch (SecurityException e) {
                 e.printStackTrace();
             }
@@ -111,9 +128,11 @@ public class LocationUtilities {
         this.listener = listener;
     }
 
-    private void onLocationReceived(Location location) {
-        if (listener != null) {
-            listener.onLocationReceived(location);
-        }
+    private void onLocationReceived(Location location, long locationTime) {
+        Date date = new Date(locationTime);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        String formattedTime = dateFormat.format(date);
+        Log.d("Location", "Location: " + location.toString() + ", Time: " + formattedTime);
+        listener.onLocationReceived(location);
     }
 }

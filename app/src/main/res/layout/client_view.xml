@@ -1,47 +1,83 @@
-<?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="10dp"
-    android:padding="16dp"
-    >
+    android:padding="16dp">
+
+    <View
+        android:id="@+id/separator"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="150dp"
+        android:background="#DAD8D8" />
 
     <TextView
         android:id="@+id/name"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:paddingBottom="4dp"
         android:textColor="@color/black"
         android:textSize="20sp"
         android:textStyle="bold"
-        android:paddingBottom="4dp"
-        tools:text="Name"/>
+        tools:text="Name" />
 
     <TextView
         android:id="@+id/place"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/name"
+        android:paddingBottom="4dp"
         android:textColor="@color/black"
         android:textSize="18sp"
-        android:paddingBottom="4dp"
-        tools:text="Place"/>
+        tools:text="Place" />
 
-    <TextView
-        android:id="@+id/phone"
-        android:layout_width="match_parent"
+    <LinearLayout
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/place"
-        android:textColor="@color/black"
-        android:textSize="15sp"
-        android:paddingBottom="8dp"
-        tools:text="Phone"/>
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp">
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_below="@id/phone"
-        android:background="#DAD8D8"
-        android:layout_marginTop="8dp"/>
+        <Button
+            android:id="@+id/phone"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:backgroundTint="@color/white"
+            android:contentDescription="Phone button"
+            android:drawableTop="@drawable/call"
+            android:padding="8dp" />
+
+
+        <Button
+            android:id="@+id/saveContact"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:backgroundTint="@color/white"
+            android:contentDescription="Save contact button"
+            android:drawableTop="@drawable/add_contact"
+            android:layout_marginStart="16dp"
+            android:padding="8dp" />
+        <Button
+            android:id="@+id/linkContact"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:backgroundTint="@color/white"
+            android:contentDescription="Save contact button"
+            android:drawableTop="@drawable/link_contact"
+            android:layout_marginStart="16dp"
+            android:padding="8dp" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="38dp"
+        android:layout_height="55dp"
+        android:layout_alignParentEnd="true"
+        android:contentDescription="Image available"
+        app:srcCompat="@drawable/image_icon"
+        tools:srcCompat="@drawable/image_icon" />
+
 </RelativeLayout>

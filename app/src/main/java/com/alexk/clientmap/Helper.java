@@ -2,6 +2,7 @@ package com.alexk.clientmap;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -29,6 +30,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -61,6 +63,7 @@ public class Helper extends AppCompatActivity {
     public static String USER = "";
     public static String UPLOAD_ENDPOINT = HOST + "upload/";
     public static String DOWNLOAD_ENDPOINT = HOST + "download/";
+    public static Client selectedClient = null;
     public static void loadCredentials(Context context){
         Preferences prefs = new Preferences(context);
         HOST = !prefs.getHost().isEmpty() ? prefs.getHost() : HOST;
@@ -173,19 +176,19 @@ public class Helper extends AppCompatActivity {
         return list;
     }
 
-    public static void hideKeyboard(Context context, View view) {
-        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (imm != null) {
-            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-        }
+    public static Client intentToClient(Intent intent){
+        Client client = new Client();
+        client.setName(intent.getStringExtra("name"));
+        client.setPhone(intent.getStringExtra("phone"));
+        client.setComments(intent.getStringExtra("comments"));
+        client.setLatitude(intent.getStringExtra("latitude"));
+        client.setLongitude(intent.getStringExtra("longitude"));
+        client.setId(intent.getStringExtra("id"));
+        client.setPlace(intent.getStringExtra("place"));
+
+        return client;
     }
-    private static String getStringImage(Bitmap bmp){
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        bmp.compress(Bitmap.CompressFormat.JPEG, 100, baos);
-        byte[] imageBytes = baos.toByteArray();
-        String encodedImage = Base64.encodeToString(imageBytes, Base64.DEFAULT);
-        return encodedImage;
-    }
+
     public static void uploadImage(Context context, Bitmap bitmap, String UPLOAD_URL, OnRequestSuccessListener listener) {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
@@ -269,5 +272,17 @@ public class Helper extends AppCompatActivity {
         params.width = width;
         params.height = height;
         imageView.setLayoutParams(params);
+    }
+    public static void showSnackbarWithAction(View view,String message, View.OnClickListener actionListener) {
+        Snackbar snackbar = Snackbar.make(view, message, 1000000);
+        snackbar.setAction("Yes", actionListener);
+        snackbar.show();
+    }
+    public static void hideKeyboard(Activity activity) {
+        View view = activity.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.alexk.clientmap;
 
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -9,11 +10,16 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
@@ -79,6 +85,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         recyclerView = findViewById(R.id.recyclerview);
         clientCount = findViewById(R.id.clientCount);
+        if (Helper.isDarkModeEnabled(getApplicationContext())){
+            clientCount.setTextColor(Color.WHITE);
+        }
         requestQueue = Volley.newRequestQueue(getApplicationContext());
         load();
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
@@ -104,7 +113,6 @@ public class MainActivity extends AppCompatActivity {
                     searchView.setQuery("", false);
                     hideKeyboard();
                     searchView.clearFocus();
-                    Log.d("SearchView", "Clear button clicked");
                 }
             });
         }
@@ -160,8 +168,62 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
-    }
 
+    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == 12 && resultCode == RESULT_OK) {
+            Uri contactUri = data.getData();
+
+            if (contactUri != null) {
+                String[] projection = {ContactsContract.CommonDataKinds.Phone.NUMBER, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME};
+
+                Cursor cursor = getContentResolver().query(contactUri, projection, null, null, null);
+                if (cursor != null && cursor.moveToFirst()) {
+                    int numberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+                    String phoneNumber = cursor.getString(numberIndex);
+
+                    int nameIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME);
+                    String contactName = cursor.getString(nameIndex);
+                    Log.d("MainActivity", "Contact Name: " + contactName + ", Phone Number: " + phoneNumber);
+                    if (Helper.selectedClient == null) return;
+                    Client client = Helper.selectedClient;
+                    client.setPhone(phoneNumber.replaceAll("\\D+", ""));
+                    Log.d("MainActivity", "Client: " + data.getStringExtra("name"));
+                    Helper.Request(Helper.EDIT_ENDPOINT, client.getId(), Helper.ClientToRequestBody(client), MainActivity.this, new Helper.OnRequestSuccessListener() {
+                        @Override
+                        public void onSuccess(int statusCode, String res) {
+                            Helper.Toast("Επιτυχής Επεξεργασία!", MainActivity.this, null);
+                            Helper.selectedClient = null;
+                        }
+
+                        @Override
+                        public void onError(int statusCode) {
+                            Log.d("STATUS", Integer.toString(statusCode));
+                            Helper.selectedClient = null;
+                            switch(statusCode) {
+                                case 200:
+                                    Helper.Toast("Επιτυχής Επεξεργασία!", MainActivity.this, null);
+                                    break;
+                                case 409:
+                                    Helper.Alert("Προσοχή", "Αυτό το όνομα υπάρχει ήδη!", MainActivity.this, null);
+                                    break;
+                                case 400:
+                                    Helper.Alert("Προσοχή","Δεν υπάρχει σύνδεση στο διαδίκτυο ή ο διακομιστής δεν είναι διαθέσιμος!",MainActivity.this,null);
+                                    break;
+                                default:
+                                    Helper.Alert("Προσοχή", "Κάτι πήγε στραβά!", MainActivity.this, null);
+                                    break;
+                            }
+                        }
+                    });
+                    cursor.close();
+                }
+            }
+        }
+    }
     private void load() {
         if (!Helper.hasInternetAccess(MainActivity.this)) {
             setOffline();

@@ -141,7 +141,6 @@ public class EditController extends AppCompatActivity implements LocationUtiliti
 
                 @Override
                 public void onError(VolleyError error) {
-                    // Handle the error
                     Log.e("MainActivity", "Image download failed: " + error.getMessage());
                 }
             });
